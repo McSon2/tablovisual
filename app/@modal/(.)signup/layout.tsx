@@ -9,7 +9,7 @@ import {
 import { VisuallyHidden } from "@/components/ui/visually-hidden";
 import { useRouter } from "next/navigation";
 
-export default function SignInModalLayout({
+export default function SignUpModalLayout({
   children,
 }: {
   children: React.ReactNode;
@@ -21,9 +21,9 @@ export default function SignInModalLayout({
       <DialogContent className="border-none p-0 bg-transparent shadow-none">
         <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
           <VisuallyHidden>
-            <DialogTitle>Sign In</DialogTitle>
+            <DialogTitle>Sign Up</DialogTitle>
             <DialogDescription>
-              Please sign in to access your account
+              Create your account to get started
             </DialogDescription>
           </VisuallyHidden>
           {children}

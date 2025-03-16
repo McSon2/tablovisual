@@ -1,40 +1,46 @@
-import { PrismaAdapter } from "@auth/prisma-adapter";
-import NextAuth from "next-auth";
-import type { Provider } from "next-auth/providers";
-import GitHub from "next-auth/providers/github";
-import Resend from "next-auth/providers/resend";
+import { betterAuth } from "better-auth";
+import { prismaAdapter } from "better-auth/adapters/prisma";
 import { prisma } from "./prisma";
+import { resend } from "./resend";
 
-const providers: Provider[] = [
-  Resend({
-    from: process.env.RESEND_FROM_EMAIL || "onboarding@resend.dev",
+export const auth = betterAuth({
+  database: prismaAdapter(prisma, {
+    provider: "postgresql",
   }),
-  GitHub({
-    clientId: process.env.GITHUB_CLIENT_ID,
-    clientSecret: process.env.GITHUB_CLIENT_SECRET,
-  }),
-];
-
-export const providerMap = providers
-  .map((provider) => {
-    if (typeof provider === "function") {
-      const providerData = provider();
-      return { id: providerData.id, name: providerData.name };
-    } else {
-      return { id: provider.id, name: provider.name };
-    }
-  })
-  .filter((provider) => provider.id !== "resend");
-
-export const {
-  handlers,
-  signIn,
-  signOut,
-  auth: baseAuth,
-} = NextAuth({
-  adapter: PrismaAdapter(prisma),
-  providers: providers,
-  pages: {
-    signIn: "/signin",
+  emailAndPassword: {
+    enabled: true,
+    autoSignIn: false,
+    requireEmailVerification: true,
+    sendResetPassword: async ({ user, url, token }, request) => {
+      await resend.emails.send({
+        from: process.env.RESEND_FROM_EMAIL || "",
+        to: user.email,
+        subject: "Reset your password",
+        html: `
+          <h1>Reset your password</h1>
+          <p>Click the link below to reset your password:</p>
+          <a href="${url}">${url}</a>
+          <p>If you didn't request this, please ignore this email.</p>
+        `,
+      });
+    },
   },
+  emailVerification: {
+    sendVerificationEmail: async ({ user, url, token }, request) => {
+      await resend.emails.send({
+        from: process.env.RESEND_FROM_EMAIL || "",
+        to: user.email,
+        subject: "Verify your email address",
+        html: `
+          <h1>Verify your email</h1>
+          <p>Click the link below to verify your email:</p>
+          <a href="${url}">${url}</a>
+          <p>If you didn't create an account, please ignore this email.</p>
+        `,
+      });
+    },
+    sendOnSignUp: true,
+    autoSignInAfterVerification: true,
+  },
+  plugins: [],
 });

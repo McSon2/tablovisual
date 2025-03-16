@@ -94,7 +94,7 @@ export function SigninForm() {
 
   if (showResetForm) {
     return (
-      <Card className="w-full max-w-md mx-auto border-none shadow-none bg-transparent">
+      <Card className="w-full max-w-md mx-auto">
         <CardHeader>
           <CardTitle className="text-2xl">Reset Password</CardTitle>
           <CardDescription>
@@ -132,7 +132,7 @@ export function SigninForm() {
   }
 
   return (
-    <Card className="w-full max-w-md mx-auto border-none shadow-none bg-transparent">
+    <Card className="w-full max-w-md mx-auto">
       <CardHeader>
         <CardTitle className="text-2xl">Sign in to your account</CardTitle>
         <CardDescription>
@@ -184,8 +184,4 @@ export function SigninForm() {
       </CardFooter>
     </Card>
   );
-}
-
-export default function SigninPage() {
-  return <SigninForm />;
 }

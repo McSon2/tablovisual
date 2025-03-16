@@ -1,13 +1,19 @@
+import Link from "next/link";
 import { AuthButton } from "../auth/auth-button";
 import { ModeToggle } from "../theme/theme-mode-toggle";
 
 export function Header() {
   return (
-    <header className="flex gap-4 items-center justify-between px-4 py-2 border-b border-accent">
-      <p>App Name</p>
-      <div className="flex-1"></div>
-      <AuthButton />
-      <ModeToggle />
+    <header className="border-b">
+      <nav className="flex h-16 items-center justify-between px-4">
+        <Link href="/" className="font-semibold">
+          App Name
+        </Link>
+        <div className="flex items-center gap-4">
+          <AuthButton />
+          <ModeToggle />
+        </div>
+      </nav>
     </header>
   );
 }
