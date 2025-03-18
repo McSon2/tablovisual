@@ -13,36 +13,43 @@ generator client {
   provider = "prisma-client-js"
 }
 
-// Better Auth models
-
+// User model with extended relations
 model User {
   id            String    @id @default(cuid())
   name          String
   email         String    @unique
   emailVerified Boolean   @map("email_verified")
   image         String?
+  
+  // Auth relations
   accounts      Account[]
   sessions      Session[]
-  createdAt     DateTime
-  updatedAt     DateTime
+  
+  // Application relations
+  subscription  Subscription?
+  projects      Project[]
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   @@map("user")
 }
 
+// Auth models
 model Account {
-  id                   String    @id @default(cuid())
-  userId               String
-  accountId            String
-  providerId           String
-  accessToken          String?
-  refreshToken         String?
+  id                    String    @id @default(cuid())
+  userId                String
+  accountId             String
+  providerId            String
+  accessToken           String?
+  refreshToken          String?
   idToken              String?   @db.Text
   accessTokenExpiresAt DateTime?
   refreshTokenExpiresAt DateTime?
   scope                String?
   password             String?
-  createdAt            DateTime
-  updatedAt            DateTime
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -56,8 +63,8 @@ model Session {
   expiresAt DateTime
   ipAddress String?
   userAgent String?
-  createdAt DateTime
-  updatedAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -69,8 +76,120 @@ model Verification {
   identifier String
   value      String
   expiresAt  DateTime
-  createdAt  DateTime
-  updatedAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   @@map("verification")
+}
+
+// Application models
+model Subscription {
+  id                  String    @id @default(cuid())
+  userId              String    @unique
+  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  planId              String    // free, starter, pro, enterprise
+  status              String    // active, canceled, past_due
+  currentPeriodEnd    DateTime
+  stripeCustomerId    String?
+  stripeSubscriptionId String?
+  
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  @@map("subscription")
+}
+
+model Project {
+  id            String    @id @default(cuid())
+  name          String
+  description   String?
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  sourceType    String    // excel, googlesheets, csv
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  // Relations
+  datasets      Dataset[]
+  dashboards    Dashboard[]
+
+  @@map("project")
+}
+
+model Dataset {
+  id            String    @id @default(cuid())
+  name          String
+  projectId     String
+  project       Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  // Stockage des données
+  data          Json      // Pour stocker les données tabulaires
+  schema        Json      // Pour stocker le schéma déduit (types, colonnes)
+  rowCount      Int       // Nombre de lignes
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  // Relations
+  widgets       Widget[]
+
+  @@map("dataset")
+}
+
+model Dashboard {
+  id            String    @id @default(cuid())
+  name          String
+  projectId     String
+  project       Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  layout        Json?     // Pour stocker la disposition des widgets
+  settings      Json?     // Paramètres du dashboard (thème, couleurs)
+  isPublic      Boolean   @default(false)
+  publicUrl     String?   @unique
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  // Relations
+  widgets       Widget[]
+  sharedWith    SharedDashboard[]
+
+  @@map("dashboard")
+}
+
+model Widget {
+  id            String    @id @default(cuid())
+  name          String
+  type          String    // chart, table, card, kpi, etc.
+  
+  dashboardId   String
+  dashboard     Dashboard @relation(fields: [dashboardId], references: [id], onDelete: Cascade)
+  
+  datasetId     String
+  dataset       Dataset   @relation(fields: [datasetId], references: [id])
+  
+  settings      Json      // Configuration du widget (colonnes, filtres)
+  position      Json      // Position dans le dashboard (x, y, w, h)
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@map("widget")
+}
+
+model SharedDashboard {
+  id            String    @id @default(cuid())
+  dashboardId   String
+  dashboard     Dashboard @relation(fields: [dashboardId], references: [id], onDelete: Cascade)
+  
+  email         String    // Email de la personne avec qui le dashboard est partagé
+  role          String    // viewer, editor
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@unique([dashboardId, email])
+  @@map("shared_dashboard")
 }
